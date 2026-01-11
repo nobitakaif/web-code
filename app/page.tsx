@@ -1,4 +1,5 @@
-import { signIn } from "@/auth";
+
+import { signIn } from "next-auth/react";
 import Image from "next/image";
 
 export default function Home() {
@@ -6,7 +7,7 @@ export default function Home() {
   return (
    <div className="h-screen w-full items-center justify-center">
       <button onClick={async ()=>{
-        "use server"
+        "use client"
         await signIn("google", {redirectTo :"/dahboard"})
       }}>sign with Google</button >
    </div>
