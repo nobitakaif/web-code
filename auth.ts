@@ -4,6 +4,7 @@ import Github from "next-auth/providers/Github"
 import prisma from "./prisma/client"
  
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  debug : true,
   providers: [
     Google({
       clientId : process.env.AUTH_GOOGLE_ID,
@@ -12,29 +13,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     
   ],
   secret: process.env.AUTH_SECRET,
-  
   callbacks :{
     async signIn({user, account}){
-      if(!user && !account){
-        return false
+      if(!user.email){
+        return false;
       }
-      // checked user is aleady exist or not
+      
       const exisitingUser = await prisma.user.findFirst({
         where : {
           email : user.email!
         }
       })
-      // if not exist then create new user
+    
       if(!exisitingUser){
         const newUser = await prisma.user.create({
           data:{
             email : user.email!,
             name : user.name!,
             image : user.image!,
-            provider : account?.provider == "goolge" ? "Google" : "GitHub",
             account :{
               // @ts-ignore
-              type              : account?.type as string,
               provider          : account?.provider,
               providerAccountId : account?.providerAccountId,
               refresh_token     : account?.refresh_token,
@@ -47,7 +45,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }
           }
         })
-        return newUser ? newUser : "Ops!, Unable to create new User!!"
+        // return newUser ? newUser : "Ops!, Unable to create new User!!"
+        return true
       }
       else{ 
         // check account exixt or not if not exist then linked it with user's account
@@ -59,27 +58,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               }
           }
         })
-        // if not exist then linked it with user's account
+      
         if(!isAccount){
           const createAccount = await prisma.account.create({
             data :{
-              type              : account?.type,
               provider          : account?.provider!,
               providerAccountId : account?.providerAccountId!,
-              refresh_token     : account?.refresh_token!,
+              refresh_token     : account?.refresh_token ? account.refresh_token : "not be present",
               access_token      : account?.access_token!,
               expires_at        : account?.expires_at!,
               token_type        : account?.token_type!,
               scope             : account?.scope!,
               id_token          : account?.id_token!,
               // @ts-ignore
-              session_state     : account?.session_state && account?.session_state
+              session_state     : account?.session_state ? account?.session_state : "not be present"
             }
           })
-          return 
+          return true
         }
+        return true
       }
-      return 1;
+      
     }
-  }
+  },
+  
 })
